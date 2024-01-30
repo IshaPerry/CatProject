@@ -4,26 +4,30 @@ struct ContentView: View {
     @State private var catInfo: CatInfo?
 
     var body: some View {
-        VStack {
-            if let catInfo = catInfo {
-                Text("Surprise!")
-                    .font(.headline)
-                    .padding()
-                
-                RemoteImageView(url: catInfo.url)
-                    .aspectRatio(contentMode: .fit)
-                    .padding()
-                
-                Text(catInfo.name)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-            } else {
-                ProgressView()
-                    .padding()
+        ZStack {
+            LinearGradient(colors: [.blue, .white], startPoint: .topLeading, endPoint: .bottomTrailing)
+                .edgesIgnoringSafeArea(.all)
+            VStack {
+                if let catInfo = catInfo {
+                    Text("Surprise!")
+                        .font(.headline)
+                        .padding()
+                    
+                    RemoteImageView(url: catInfo.url)
+                        .aspectRatio(contentMode: .fit)
+                        .padding()
+                    
+                    Text(catInfo.name)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                } else {
+                    ProgressView()
+                        .padding()
+                }
             }
-        }
-        .onAppear {
-            fetchRandomCatInfo()
+            .onAppear {
+                fetchRandomCatInfo()
+            }
         }
     }
     func fetchRandomCatInfo() {
