@@ -6,3 +6,25 @@
 //
 
 import Foundation
+import FirebaseAuth
+import SwiftUI
+import Firebase
+
+class AppState: ObservableObject {
+    
+    @Published var currentUser: User?
+    
+    var isLoggedIn: Bool {
+        return currentUser != nil
+    }
+    
+    
+    init(){
+        FirebaseApp.configure() //configure db
+        if let currentUser = Auth.auth().currentUser {
+            self.currentUser = currentUser
+        }
+    }
+    
+    
+}

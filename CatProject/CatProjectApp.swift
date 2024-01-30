@@ -10,8 +10,6 @@ import SwiftUI
 
 @main
 struct CatProjectApp: App {
-    let persistenceController = PersistenceController.shared
-    
     @ObservedObject var appState: AppState = AppState()
     var body: some Scene {
         WindowGroup {

@@ -1,32 +1,32 @@
-//
-//  ContentView.swift
-//  CatProject
-//
-//  Created by Isha Perry on 1/30/24.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @State private var catImageURL: URL?
+    @State private var catInfo: CatInfo?
 
     var body: some View {
         VStack {
-            if let imageURL = catImageURL {
-                RemoteImageView(url: imageURL)
+            if let catInfo = catInfo {
+                Text("Surprise!")
+                    .font(.headline)
+                    .padding()
+                
+                RemoteImageView(url: catInfo.url)
                     .aspectRatio(contentMode: .fit)
                     .padding()
+                
+                Text(catInfo.name)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
             } else {
                 ProgressView()
                     .padding()
             }
         }
         .onAppear {
-            fetchRandomCatImage()
+            fetchRandomCatInfo()
         }
     }
-    
-    func fetchRandomCatImage() {
+    func fetchRandomCatInfo() {
         guard let url = URL(string: "https://api.thecatapi.com/v1/images/search") else {
             return
         }
@@ -45,9 +45,10 @@ struct ContentView: View {
             do {
                 let decoder = JSONDecoder()
                 let catData = try decoder.decode([Cat].self, from: data)
-                if let firstCat = catData.first, let catURL = URL(string: firstCat.url) {
+                print(catData)
+                if let firstCat = catData.first {
                     DispatchQueue.main.async {
-                        self.catImageURL = catURL
+//                        self.catInfo = CatInfo(name: firstCat.name ?? "Unknown", url: URL(string: firstCat.url))
                     }
                 }
             } catch {
@@ -55,6 +56,8 @@ struct ContentView: View {
             }
         }.resume()
     }
+    
+
 }
 
 struct ContentView_Previews: PreviewProvider {
@@ -65,6 +68,12 @@ struct ContentView_Previews: PreviewProvider {
 
 struct Cat: Decodable {
     let url: String
+    let name: String?
+}
+
+struct CatInfo {
+    let name: String
+    let url: URL?
 }
 
 struct RemoteImageView: View {
@@ -101,3 +110,17 @@ struct RemoteImage: View {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

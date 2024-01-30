@@ -15,7 +15,7 @@ struct AuthView: View {
     var body: some View {
         VStack {
             
-        Text("ChatGPT Mobile")
+        Text("Surprise Cat Mobile")
         .font(.title)
         .bold()
         
