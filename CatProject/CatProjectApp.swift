@@ -6,27 +6,22 @@
 //
 
 import SwiftUI
-import SwiftData
+
 
 @main
 struct CatProjectApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
+    let persistenceController = PersistenceController.shared
+    
+    @ObservedObject var appState: AppState = AppState()
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if appState.isLoggedIn{
+                ContentView()
+            } else {
+                AuthView()
+                    .environmentObject(appState)
+            }
+                
         }
-        .modelContainer(sharedModelContainer)
     }
 }
