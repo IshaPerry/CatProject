@@ -6,56 +6,98 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var catImageURL: URL?
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        VStack {
+            if let imageURL = catImageURL {
+                RemoteImageView(url: imageURL)
+                    .aspectRatio(contentMode: .fit)
+                    .padding()
+            } else {
+                ProgressView()
+                    .padding()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
+        }
+        .onAppear {
+            fetchRandomCatImage()
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    
+    func fetchRandomCatImage() {
+        guard let url = URL(string: "https://api.thecatapi.com/v1/images/search") else {
+            return
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        
+        URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if let error = error {
+                print("Error fetching data: \(error.localizedDescription)")
+                return
             }
+            
+            guard let data = data else {
+                print("No data returned from API")
+                return
+            }
+            
+            do {
+                let decoder = JSONDecoder()
+                let catData = try decoder.decode([Cat].self, from: data)
+                if let firstCat = catData.first, let catURL = URL(string: firstCat.url) {
+                    DispatchQueue.main.async {
+                        self.catImageURL = catURL
+                    }
+                }
+            } catch {
+                print("Error decoding JSON: \(error.localizedDescription)")
+            }
+        }.resume()
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
+}
+
+struct Cat: Decodable {
+    let url: String
+}
+
+struct RemoteImageView: View {
+    private var url: URL?
+    
+    init(url: URL?) {
+        self.url = url
+    }
+    
+    var body: some View {
+        if let url = url {
+            RemoteImage(url: url)
+        } else {
+            Image(systemName: "questionmark")
+                .foregroundColor(.gray)
         }
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+struct RemoteImage: View {
+    private var url: URL
+    
+    init(url: URL) {
+        self.url = url
+    }
+    
+    var body: some View {
+        if let imageData = try? Data(contentsOf: url), let uiImage = UIImage(data: imageData) {
+            Image(uiImage: uiImage)
+                .resizable()
+        } else {
+            Image(systemName: "questionmark")
+                .foregroundColor(.gray)
+        }
+    }
 }
