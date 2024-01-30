@@ -1,67 +1,117 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var catInfo: CatInfo?
+    @State private var breeds: [Breed] = []
+    @State private var selectedBreed: Breed?
+    @State private var selectedBreedImageURL: String?
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [.blue, .white], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .edgesIgnoringSafeArea(.all)
-            VStack {
-                if let catInfo = catInfo {
-                    Text("Surprise!")
+        VStack {
+            Button(action: {
+                selectedBreed = breeds.randomElement()
+                if let breed = selectedBreed {
+                    fetchCatImage(breedId: breed.id)
+                }
+            }) {
+                Text("Generate a Random Cat")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.blue).opacity(01
+)
+                    .cornerRadius(10)
+                    .padding()
+            }
+
+            if let imageURL = selectedBreedImageURL {
+                VStack {
+                    Spacer()
+                    AsyncImage(url: URL(string: imageURL)) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                        case .failure:
+                            Image(systemName: "exclamationmark.icloud")
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    .frame(width: 400, height: 400)
+                    .cornerRadius(10)
+                    .padding()
+
+                    Text(selectedBreed?.name ?? "Unknown")
                         .font(.headline)
                         .padding()
-                    
-                    RemoteImageView(url: catInfo.url)
-                        .aspectRatio(contentMode: .fit)
-                        .padding()
-                    
-                    Text(catInfo.name)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                } else {
-                    ProgressView()
-                        .padding()
+                        .foregroundColor(.blue)
+                    Spacer()
                 }
+            } else {
+                Spacer()
             }
-            .onAppear {
-                fetchRandomCatInfo()
-            }
+        }
+        .onAppear {
+            fetchCatBreeds()
         }
     }
-    func fetchRandomCatInfo() {
-        guard let url = URL(string: "https://api.thecatapi.com/v1/images/search") else {
+
+    func fetchCatBreeds() {
+        guard let url = URL(string: "https://api.thecatapi.com/v1/breeds") else {
             return
         }
-        
-        URLSession.shared.dataTask(with: url) { (data, response, error) in
-            if let error = error {
-                print("Error fetching data: \(error.localizedDescription)")
-                return
-            }
-            
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
             guard let data = data else {
                 print("No data returned from API")
                 return
             }
-            
+
             do {
                 let decoder = JSONDecoder()
-                let catData = try decoder.decode([Cat].self, from: data)
-                print(catData)
-                if let firstCat = catData.first {
-                    DispatchQueue.main.async {
-//                        self.catInfo = CatInfo(name: firstCat.name ?? "Unknown", url: URL(string: firstCat.url))
-                    }
+                breeds = try decoder.decode([Breed].self, from: data)
+            } catch {
+                print("Error decoding JSON: \(error.localizedDescription)")
+            }
+        }.resume()
+    }
+
+    func fetchCatImage(breedId: String) {
+        guard let url = URL(string: "https://api.thecatapi.com/v1/images/search?breed_ids=\(breedId)") else {
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            guard let data = data else {
+                print("No data returned from API")
+                return
+            }
+
+            do {
+                let decoder = JSONDecoder()
+                let catImages = try decoder.decode([CatImage].self, from: data)
+                if let firstImage = catImages.first {
+                    selectedBreedImageURL = firstImage.url
+                } else {
+                    print("No image found for selected breed")
                 }
             } catch {
                 print("Error decoding JSON: \(error.localizedDescription)")
             }
         }.resume()
     }
-    
+}
 
+struct Breed: Decodable, Identifiable, Hashable {
+    let id: String
+    let name: String?
+}
+
+struct CatImage: Decodable, Identifiable {
+    let id: String
+    let url: String
 }
 
 struct ContentView_Previews: PreviewProvider {
@@ -69,62 +119,4 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
-
-struct Cat: Decodable {
-    let url: String
-    let name: String?
-}
-
-struct CatInfo {
-    let name: String
-    let url: URL?
-}
-
-struct RemoteImageView: View {
-    private var url: URL?
-    
-    init(url: URL?) {
-        self.url = url
-    }
-    
-    var body: some View {
-        if let url = url {
-            RemoteImage(url: url)
-        } else {
-            Image(systemName: "questionmark")
-                .foregroundColor(.gray)
-        }
-    }
-}
-
-struct RemoteImage: View {
-    private var url: URL
-    
-    init(url: URL) {
-        self.url = url
-    }
-    
-    var body: some View {
-        if let imageData = try? Data(contentsOf: url), let uiImage = UIImage(data: imageData) {
-            Image(uiImage: uiImage)
-                .resizable()
-        } else {
-            Image(systemName: "questionmark")
-                .foregroundColor(.gray)
-        }
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
